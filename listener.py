@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+import yaml
+import sys
+import re
+import logging
+import requests
+import meshtastic
+import meshtastic.serial_interface
+from pubsub import pub
+import time
+from pprint import pprint
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class server_config:
+	rate_limit: int
+	ignore_list: list[str]
+	caltopo_url: str
+	logging: str
+	logging_level: int
+
+	def __init__(self, yaml_file: str):
+		with open(yaml_file, "r") as fh:
+			yaml_data = yaml.safe_load(fh)
+
+		self.logging = yaml_data["logging"]
+		if self.logging == "INFO":
+			self.logging_level = logging.INFO
+		else:
+			self.logging_level = logging.WARNING
+
+		self.caltopo_url = yaml_data["caltopo_url"]
+		self.rate_limit = int(yaml_data["rate_limit"])
+		self.ignore_list = {}
+		for i in yaml_data["ignore"]:
+			self.ignore_list[i] = True
+
+@dataclass
+class server:
+	url_prefix: str
+	last_update: int
+	config: server_config
+
+	def report(self, loc):
+		current_time = time.time()
+		delta = current_time - self.last_update
+		if delta < self.config.rate_limit:
+			print("rate limiting")
+			return
+
+		logger.info(f"TX {loc.source} {loc.rssi}dbi {loc.altitude}ft {loc.longitude} {loc.latitude} {loc.speed}kph")
+		url = f"{self.url_prefix}?id={loc.source}&lat={loc.latitude}&lng={loc.longitude}"
+		resp = requests.get(url)
+
+	def on_receive(self, packet, interface):
+		loc = location(packet)
+		logger.info(f"RX {loc.source} {loc.rssi}dbi {loc.altitude}ft {loc.longitude} {loc.latitude} {loc.speed}kph")
+
+		if loc.source is None:
+			return
+
+		if loc.source in self.config.ignore_list:
+			return
+
+		self.report(loc)
+
+	def __init__(self, yaml_file: str):
+		self.config = server_config(yaml_file)
+		self.url_prefix = self.config.caltopo_url
+		self.last_update = time.time() - self.config.rate_limit
+		logging.basicConfig(level=self.config.logging_level, format="{asctime} - {levelname} - {message}", style="{")
+
+@dataclass
+class location:
+	source: int
+	altitude: int
+	longitude: str
+	latitude: str
+	speed: int
+	rssi: int
+
+	def __init__(self, packet):
+		self.source = packet['fromId']
+		self.altitude = packet['decoded']['position']['altitude']
+		self.longitude = packet['decoded']['position']['longitude']
+		self.latitude = packet['decoded']['position']['latitude']
+		self.speed = packet['decoded']['position']['groundSpeed']
+		self.rssi =  packet['rxRssi']
+
+
+if __name__ == "__main__":
+	serv = server("config.yaml")
+
+	pub.subscribe(serv.on_receive, "meshtastic.receive.position")
+	interface = meshtastic.serial_interface.SerialInterface()
+
+	sleep_time = 10
+	if len(sys.argv) > 1:
+		sleep_time = int(sys.argv[1])
+
+	time.sleep(sleep_time)
+	interface.close()
