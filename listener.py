@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
-import yaml
 import sys
+import time
 import logging
+from dataclasses import dataclass
 import requests
+import yaml
 import meshtastic
 import meshtastic.serial_interface
 from pubsub import pub
-import time
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
