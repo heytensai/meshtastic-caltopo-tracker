@@ -89,7 +89,7 @@ class Server:
         url = (
             f"{self.url_prefix}?id={loc.source}&lat={loc.latitude}&lng={loc.longitude}"
         )
-        resp = requests.get(url)
+        requests.get(url, timeout=10)
 
     def on_receive(self, packet, interface):
         """Callback for handling Meshtastic position packets.
