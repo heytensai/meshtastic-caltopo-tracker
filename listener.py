@@ -2,14 +2,12 @@
 
 import yaml
 import sys
-import re
 import logging
 import requests
 import meshtastic
 import meshtastic.serial_interface
 from pubsub import pub
 import time
-from pprint import pprint
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
