@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class server_config:
+class ServerConfig:
     """Configuration for the Meshtastic to CalTopo server.
 
     Attributes:
@@ -54,16 +54,16 @@ class server_config:
 
 
 @dataclass
-class server:
+class Server:
     url_prefix: str
     last_update: int
-    config: server_config
+    config: ServerConfig
 
     def report(self, loc):
         """Send location data to CalTopo API.
 
         Args:
-            loc (location): Location object containing device and GPS data
+            loc (Location): Location object containing device and GPS data
         """
         current_time = time.time()
         delta = current_time - self.last_update
@@ -92,7 +92,7 @@ class server:
             packet (dict): Raw Meshtastic packet data
             interface (SerialInterface): Meshtastic interface object
         """
-        loc = location(packet)
+        loc = Location(packet)
         logger.info(
             "RX %s %ddbi %dft %s %s %dkph",
             loc.source,
@@ -117,7 +117,7 @@ class server:
         Args:
             yaml_file (str): Path to the YAML configuration file
         """
-        self.config = server_config(yaml_file)
+        self.config = ServerConfig(yaml_file)
         self.url_prefix = self.config.caltopo_url
         self.last_update = time.time() - self.config.rate_limit
         logging.basicConfig(
@@ -128,7 +128,7 @@ class server:
 
 
 @dataclass
-class location:
+class Location:
     source: int
     altitude: int
     longitude: str
@@ -146,7 +146,7 @@ class location:
 
 
 if __name__ == "__main__":
-    serv = server("config.yaml")
+    serv = Server("config.yaml")
 
     pub.subscribe(serv.on_receive, "meshtastic.receive.position")
     interface = meshtastic.serial_interface.SerialInterface()
