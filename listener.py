@@ -99,7 +99,7 @@ class Server:
         )
         requests.get(url, timeout=10)
 
-    def on_receive(self, packet, interface):
+    def on_receive(self, packet, interface):  # pylint: disable=unused-argument
         """Callback for handling Meshtastic position packets.
 
         Args:
