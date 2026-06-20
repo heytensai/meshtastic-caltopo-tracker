@@ -15,6 +15,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class server_config:
+    """Configuration for the Meshtastic to CalTopo server.
+
+    Attributes:
+        rate_limit (int): Time in seconds between API requests to CalTopo
+        ignore_list (list[str]): List of device IDs to ignore
+        caltopo_url (str): Base URL for CalTopo API
+        logging (str): Logging level setting ("INFO" or "WARNING")
+        logging_level (int): Numeric logging level for Python's logging module
+    """
+
     rate_limit: int
     ignore_list: list[str]
     caltopo_url: str
@@ -22,6 +32,11 @@ class server_config:
     logging_level: int
 
     def __init__(self, yaml_file: str):
+        """Initialize configuration from a YAML file.
+
+        Args:
+            yaml_file (str): Path to the YAML configuration file
+        """
         with open(yaml_file, "r") as fh:
             yaml_data = yaml.safe_load(fh)
 
@@ -45,6 +60,11 @@ class server:
     config: server_config
 
     def report(self, loc):
+        """Send location data to CalTopo API.
+
+        Args:
+            loc (location): Location object containing device and GPS data
+        """
         current_time = time.time()
         delta = current_time - self.last_update
         if delta < self.config.rate_limit:
@@ -52,7 +72,13 @@ class server:
             return
 
         logger.info(
-            f"TX {loc.source} {loc.rssi}dbi {loc.altitude}ft {loc.longitude} {loc.latitude} {loc.speed}kph"
+            "TX %s %ddbi %dft %s %s %dkph",
+            loc.source,
+            loc.rssi,
+            loc.altitude,
+            loc.longitude,
+            loc.latitude,
+            loc.speed,
         )
         url = (
             f"{self.url_prefix}?id={loc.source}&lat={loc.latitude}&lng={loc.longitude}"
@@ -60,9 +86,21 @@ class server:
         resp = requests.get(url)
 
     def on_receive(self, packet, interface):
+        """Callback for handling Meshtastic position packets.
+
+        Args:
+            packet (dict): Raw Meshtastic packet data
+            interface (SerialInterface): Meshtastic interface object
+        """
         loc = location(packet)
         logger.info(
-            f"RX {loc.source} {loc.rssi}dbi {loc.altitude}ft {loc.longitude} {loc.latitude} {loc.speed}kph"
+            "RX %s %ddbi %dft %s %s %dkph",
+            loc.source,
+            loc.rssi,
+            loc.altitude,
+            loc.longitude,
+            loc.latitude,
+            loc.speed,
         )
 
         if loc.source is None:
@@ -74,6 +112,11 @@ class server:
         self.report(loc)
 
     def __init__(self, yaml_file: str):
+        """Initialize the server with configuration from a YAML file.
+
+        Args:
+            yaml_file (str): Path to the YAML configuration file
+        """
         self.config = server_config(yaml_file)
         self.url_prefix = self.config.caltopo_url
         self.last_update = time.time() - self.config.rate_limit
