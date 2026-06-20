@@ -61,6 +61,14 @@ class ServerConfig:
 
 @dataclass
 class Server:
+    """Server for forwarding Meshtastic position updates to CalTopo.
+
+    Attributes:
+        url_prefix (str): Base URL for API requests
+        last_update (int): Timestamp of last update
+        config (ServerConfig): Server configuration
+    """
+
     url_prefix: str
     last_update: int
     config: ServerConfig
@@ -135,6 +143,17 @@ class Server:
 
 @dataclass
 class Location:
+    """Location data extracted from a Meshtastic packet.
+
+    Attributes:
+        source (int): Device ID
+        altitude (int): Altitude in feet
+        longitude (str): GPS longitude
+        latitude (str): GPS latitude
+        speed (int): Speed in kph
+        rssi (int): RSSI in dBi
+    """
+
     source: int
     altitude: int
     longitude: str
