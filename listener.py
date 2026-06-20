@@ -170,8 +170,10 @@ class Location:
         self.rssi = packet["rxRssi"]
 
 
-if __name__ == "__main__":
-    serv = Server("config.yaml")
+def main(config: str) -> None:
+    """the main event"""
+
+    serv = Server(config)
 
     pub.subscribe(serv.on_receive, "meshtastic.receive.position")
     interface = meshtastic.serial_interface.SerialInterface()
@@ -182,3 +184,7 @@ if __name__ == "__main__":
 
     time.sleep(sleep_time)
     interface.close()
+
+
+if __name__ == "__main__":
+    main("config.yaml")
