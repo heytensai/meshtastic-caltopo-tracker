@@ -43,7 +43,7 @@ class ServerConfig:
         Args:
             yaml_file (str): Path to the YAML configuration file
         """
-        with open(yaml_file, "r") as fh:
+        with open(yaml_file, "r", encoding="utf-8") as fh:
             yaml_data = yaml.safe_load(fh)
 
         self.logging = yaml_data["logging"]
