@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+"""
+Meshtastic to CalTopo position forwarder.
+
+This script listens for Meshtastic device position updates and forwards them
+as GPS coordinates to CalTopo API for tracking purposes.
+"""
 
 import sys
 import time
